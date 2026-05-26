@@ -8,9 +8,9 @@ run:
 
 VERSION:= 1.0
 
-all: golang-kubernetes-ultimate-service
+all: service
 
-golang-kubernetes-ultimate-service:
+service:
 	docker build \
 		-f zarf/docker/dockerfile \
 		-t service-amd64:${VERSION} \
@@ -27,10 +27,41 @@ kind-up:
 	kind create cluster \
 		--name $(KIND_CLUSTER) \
 		--config zarf/k8s/kind/kind-config.yaml
+	kubectl config set-context --current --namespace=service-system
 
 kind-down:
 	kind delete cluster --name $(KIND_CLUSTER)
 
+kind-load:
+	kind load docker-image service-amd64:$(VERSION) --name $(KIND_CLUSTER)
+
+kind-apply:
+	kustomize build zarf/k8s/kind/service-pod | kubectl apply -f -
+
 kind-status:
 	kubectl get nodes -o wide
 	kubectl get svc -o wide
+	kubectl get pods -o wide --watch --all-namespaces
+
+kind-status-service:
+	kubectl get pods -o wide --watch
+
+kind-logs:
+	kubectl logs -l app=service --all-containers=true -f --tail=100
+
+kind-restart:
+	kubectl rollout restart deployment service-pod
+
+kind-update: all kind-load kind-restart
+
+kind-update-apply: all kind-load kind-apply
+
+kind-describe:
+	kubectl describe pod -l app=service
+
+# ==============================================================================
+# Modules support
+
+tidy:
+	go mod tidy
+	go mod vendor

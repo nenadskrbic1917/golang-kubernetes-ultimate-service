@@ -1,26 +1,26 @@
 # Build the GO binary
-FROM golang:1.26 AS build_sales-api
+FROM golang:1.26 AS build_service
 ENV CGO_ENABLED=0
 ARG BUILD_REF
 
 # Copy the source code into the container
-COPY . /golang-kubernetes-ultimate-service
+COPY . /service
 
 # Build the service binary
-WORKDIR /golang-kubernetes-ultimate-service
-RUN go build -ldflags "-X main.build=${BUILD_REF}"
+WORKDIR /service
+RUN go build -o service -ldflags "-X main.build=${BUILD_REF}"
 
 # Run the Go Binary in Alpine.
 FROM alpine:3.23
 ARG BUILD_DATE
 ARG BUILD_REF
-COPY --from=build_sales-api /golang-kubernetes-ultimate-service /golang-kubernetes-ultimate-service/golang-kubernetes-ultimate-service
-WORKDIR /golang-kubernetes-ultimate-service
-CMD ["./golang-kubernetes-ultimate-service"]
+COPY --from=build_service /service/service /service/service
+WORKDIR /service
+CMD ["./service"]
 
 LABEL org.opencontainers.image.created="${BUILD_DATE}" \
-      org.opencontainers.image.title="sales-api" \
+      org.opencontainers.image.title="service" \
       org.opencontainers.image.authors="William Kennedy <bill@ardanlabs.com>" \
-      org.opencontainers.image.source="https://github.com/ardanlabs/service/app/sales-api" \
+      org.opencontainers.image.source="https://github.com/ardanlabs/service/app/service" \
       org.opencontainers.image.revision="${BUILD_REF}" \
       org.opencontainers.image.vendor="Ardan Labs"
